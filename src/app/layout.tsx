@@ -28,7 +28,10 @@ export const metadata: Metadata = {
   description: "Fast, simple, and powerful online tools built for everyday work. Image tools, PDF tools, text tools, and more.",
   keywords: "online tools, free tools, image tools, PDF tools, text tools, utilities",
   icons: {
-    icon: "/qr.png",
+    icon: [
+      { url: "/qr.png", type: "image/png" },
+      { url: "/favicon.ico", rel: "icon" }
+    ],
   },
   openGraph: {
     title: "ToolNest - 50+ Free Smart Tools in One Place",
