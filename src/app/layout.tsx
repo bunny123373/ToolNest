@@ -54,7 +54,7 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" crossOrigin="anonymous"></script>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8628683007968578" crossOrigin="anonymous"></script>
       </head>
       <body className={`${inter.className} min-h-full flex flex-col bg-surface text-text-primary`}>
         <Navbar />
