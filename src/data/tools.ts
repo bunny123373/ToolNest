@@ -100,6 +100,7 @@ export const tools: Tool[] = [
     route: '/tools/image-downloader',
     category: 'image',
     icon: '📥',
+    badge: 'trending',
   },
 ];
 
