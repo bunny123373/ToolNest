@@ -38,6 +38,7 @@ export default function ToolPageClient() {
   const [error, setError] = useState('');
   const [thumbnails, setThumbnails] = useState<ThumbnailResult[]>([]);
   const [selectedThumbnail, setSelectedThumbnail] = useState<ThumbnailResult | null>(null);
+  const [videoId, setVideoId] = useState('');
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -52,29 +53,46 @@ export default function ToolPageClient() {
       return;
     }
 
-    const videoId = parsed.videoId;
+    const id = parsed.videoId;
+    setVideoId(id);
+    
     const thumbnailOptions: ThumbnailResult[] = [
-      { url: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`, quality: 'Max Resolution (1280x720)' },
-      { url: `https://img.youtube.com/vi/${videoId}/sddefault.jpg`, quality: 'SD (640x480)' },
-      { url: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`, quality: 'HQ (480x360)' },
-      { url: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`, quality: 'MQ (320x180)' },
-      { url: `https://img.youtube.com/vi/${videoId}/default.jpg`, quality: 'Default (120x90)' },
+      { url: `https://img.youtube.com/vi/${id}/maxresdefault.jpg`, quality: 'Max Resolution (1280x720)' },
+      { url: `https://img.youtube.com/vi/${id}/sddefault.jpg`, quality: 'SD (640x480)' },
+      { url: `https://img.youtube.com/vi/${id}/hqdefault.jpg`, quality: 'HQ (480x360)' },
+      { url: `https://img.youtube.com/vi/${id}/mqdefault.jpg`, quality: 'MQ (320x180)' },
+      { url: `https://img.youtube.com/vi/${id}/default.jpg`, quality: 'Default (120x90)' },
     ];
 
     setThumbnails(thumbnailOptions);
     setSelectedThumbnail(thumbnailOptions[0]);
   };
 
-  const downloadThumbnail = () => {
-    if (!selectedThumbnail) return;
+  const downloadThumbnail = async () => {
+    if (!selectedThumbnail || !videoId) return;
     
-    const link = document.createElement('a');
-    link.href = selectedThumbnail.url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const response = await fetch(selectedThumbnail.url);
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = `youtube-thumbnail-${videoId}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      // Fallback to direct download
+      const link = document.createElement('a');
+      link.href = selectedThumbnail.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   return (
@@ -116,7 +134,8 @@ export default function ToolPageClient() {
                   alt="Thumbnail preview"
                   className="w-full rounded-xl"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://img.youtube.com/vi/default/maxresdefault.jpg';
+                    const img = e.target as HTMLImageElement;
+                    img.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
                   }}
                 />
               </div>
