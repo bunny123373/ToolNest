@@ -61,7 +61,19 @@ export default function ToolPageClient() {
       };
       
       img.onerror = () => {
-        resolve(null);
+        // Try without crossOrigin
+        const img2 = new Image();
+        img2.onload = () => {
+          resolve({
+            url,
+            width: img2.naturalWidth,
+            height: img2.naturalHeight,
+            size: 0,
+            type: 'image/' + (url.split('.').pop()?.split('?')[0] || 'png'),
+          });
+        };
+        img2.onerror = () => resolve(null);
+        img2.src = url;
       };
       
       img.src = url;
@@ -105,13 +117,44 @@ export default function ToolPageClient() {
       
       if (info) {
         setImageInfo(info);
+        setError('');
       } else {
-        setError('Could not load image. Please check the URL.');
+        // Try with different CORS settings - try direct link
+        const directInfo = await tryFetchDirect(url);
+        if (directInfo) {
+          setImageInfo(directInfo);
+        } else {
+          setError('Could not load image. The server may be blocking access. Try a different URL.');
+        }
       }
-    } catch {
+    } catch (err) {
       setError('Failed to fetch image. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const tryFetchDirect = async (url: string): Promise<ImageInfo | null> => {
+    try {
+      const response = await fetch(url, { mode: 'cors' });
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          resolve({
+            url,
+            width: img.naturalWidth,
+            height: img.naturalHeight,
+            size: blob.size,
+            type: blob.type || 'image/png',
+          });
+        };
+        img.onerror = () => resolve(null);
+        img.src = URL.createObjectURL(blob);
+      });
+    } catch {
+      return null;
     }
   };
 
