@@ -5,7 +5,7 @@ export const categories: Category[] = [
     id: 'image',
     name: 'Image Tools',
     icon: '🖼️',
-    toolCount: 2,
+    toolCount: 3,
     description: 'Compress, convert, and edit images',
     route: '/tools?category=image',
   },

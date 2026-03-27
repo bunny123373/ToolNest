@@ -93,6 +93,14 @@ export const tools: Tool[] = [
     category: 'developer',
     icon: '🎨',
   },
+  {
+    id: 'image-downloader',
+    title: 'Image Downloader',
+    description: 'Download any image from a URL',
+    route: '/tools/image-downloader',
+    category: 'image',
+    icon: '📥',
+  },
 ];
 
 export const getTrendingTools = (): Tool[] => {
