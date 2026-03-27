@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { tools } from '@/data/tools';
 
-const baseUrl = 'https://toolnest.com';
+const baseUrl = 'https://toolsbar.vercel.app';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
