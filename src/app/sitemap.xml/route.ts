@@ -1,19 +1,10 @@
-import { Metadata } from 'next';
 import { tools } from '@/data/tools';
 
 const baseUrl = 'https://toolsbar.vercel.app';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    alternates: {
-      canonical: baseUrl,
-    },
-  };
-}
-
-export function GET() {
+export async function GET() {
   const toolUrls = tools.map((tool) => ({
     url: `${baseUrl}${tool.route}`,
     lastModified: new Date(),
@@ -21,10 +12,7 @@ export function GET() {
     priority: 0.8,
   }));
 
-  const routes = [
-    '',
-    '/tools',
-  ];
+  const routes = ['', '/tools'];
 
   const allUrls = [
     {
