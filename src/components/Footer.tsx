@@ -14,9 +14,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <span className="text-white font-bold text-sm">TN</span>
-              </div>
+              <img src="/alphabet.png" alt="ToolNest" className="h-8 w-auto" />
               <span className="text-xl font-bold text-text-primary">ToolNest</span>
             </div>
             <p className="text-text-secondary max-w-md">

@@ -19,9 +19,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-              <span className="text-white font-bold text-sm">TN</span>
-            </div>
+            <img src="/alphabet.png" alt="ToolNest" className="h-8 w-auto" />
             <span className="text-xl font-bold text-text-primary group-hover:text-primary transition-colors">
               ToolNest
             </span>
