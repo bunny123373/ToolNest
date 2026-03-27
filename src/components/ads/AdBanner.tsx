@@ -1,29 +1,79 @@
 'use client';
 
+import { useEffect } from 'react';
+
 interface AdBannerProps {
   className?: string;
 }
 
 export default function AdBanner({ className = '' }: AdBannerProps) {
+  useEffect(() => {
+    try {
+      (window as unknown as { adsbygoogle: unknown[] }).adsbygoogle = (window as unknown as { adsbygoogle: unknown[] }).adsbygoogle || [];
+      (window as unknown as { adsbygoogle: unknown[] }).adsbygoogle.push({});
+    } catch (e) {
+      console.error('AdSense error:', e);
+    }
+  }, []);
+
   return (
-    <div className={`ad-banner ${className}`} style={{ display: 'none' }}>
-      <div className="min-h-[90px]" />
+    <div className={`ad-banner ${className}`}>
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block', minHeight: '90px' }}
+        data-ad-client="ca-pub-8628683007968578"
+        data-ad-slot="1234567890"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      />
     </div>
   );
 }
 
 export function AdSidebar() {
+  useEffect(() => {
+    try {
+      (window as unknown as { adsbygoogle: unknown[] }).adsbygoogle = (window as unknown as { adsbygoogle: unknown[] }).adsbygoogle || [];
+      (window as unknown as { adsbygoogle: unknown[] }).adsbygoogle.push({});
+    } catch (e) {
+      console.error('AdSense error:', e);
+    }
+  }, []);
+
   return (
-    <div className="ad-sidebar" style={{ display: 'none' }}>
-      <div className="min-h-[250px]" />
+    <div className="ad-sidebar">
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block', minHeight: '250px' }}
+        data-ad-client="ca-pub-8628683007968578"
+        data-ad-slot="9876543210"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      />
     </div>
   );
 }
 
 export function AdInArticle() {
+  useEffect(() => {
+    try {
+      (window as unknown as { adsbygoogle: unknown[] }).adsbygoogle = (window as unknown as { adsbygoogle: unknown[] }).adsbygoogle || [];
+      (window as unknown as { adsbygoogle: unknown[] }).adsbygoogle.push({});
+    } catch (e) {
+      console.error('AdSense error:', e);
+    }
+  }, []);
+
   return (
-    <div className="ad-in-article" style={{ display: 'none' }}>
-      <div className="min-h-[60px]" />
+    <div className="ad-in-article">
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block', minHeight: '60px' }}
+        data-ad-client="ca-pub-8628683007968578"
+        data-ad-slot="5555555555"
+        data-ad-format="fluid"
+        data-full-width-responsive="true"
+      />
     </div>
   );
 }
