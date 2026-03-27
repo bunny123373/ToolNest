@@ -12,7 +12,7 @@ export async function GET() {
     priority: 0.8,
   }));
 
-  const routes = ['', '/tools'];
+  const routes = ['', '/tools', '/about'];
 
   const allUrls = [
     {
