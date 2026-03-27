@@ -52,6 +52,47 @@ export const tools: Tool[] = [
     category: 'developer',
     icon: '🔐',
   },
+  {
+    id: 'base64-encoder',
+    title: 'Base64 Encoder/Decoder',
+    description: 'Encode and decode Base64 strings',
+    route: '/tools/base64-encoder',
+    category: 'developer',
+    icon: '🔤',
+    badge: 'recent',
+  },
+  {
+    id: 'json-formatter',
+    title: 'JSON Formatter',
+    description: 'Format, validate, and minify JSON',
+    route: '/tools/json-formatter',
+    category: 'developer',
+    icon: '📋',
+  },
+  {
+    id: 'url-shortener',
+    title: 'URL Shortener',
+    description: 'Shorten long URLs instantly',
+    route: '/tools/url-shortener',
+    category: 'utility',
+    icon: '🔗',
+  },
+  {
+    id: 'lorem-ipsum',
+    title: 'Lorem Ipsum Generator',
+    description: 'Generate placeholder text for designs',
+    route: '/tools/lorem-ipsum',
+    category: 'text',
+    icon: '📝',
+  },
+  {
+    id: 'color-converter',
+    title: 'Color Converter',
+    description: 'Convert between HEX, RGB, HSL, HSV',
+    route: '/tools/color-converter',
+    category: 'developer',
+    icon: '🎨',
+  },
 ];
 
 export const getTrendingTools = (): Tool[] => {

@@ -2,6 +2,7 @@ import HeroSection from '@/components/HeroSection';
 import SectionHeading from '@/components/SectionHeading';
 import ToolCard from '@/components/ToolCard';
 import CategoryCard from '@/components/CategoryCard';
+import AdBanner from '@/components/ads/AdBanner';
 import { tools, getTrendingTools, getRecentTools, getPopularTools } from '@/data/tools';
 import { categories } from '@/data/categories';
 
@@ -13,6 +14,12 @@ export default function Home() {
   return (
     <>
       <HeroSection />
+
+      <div className="px-4">
+        <div className="max-w-7xl mx-auto py-8">
+          <AdBanner />
+        </div>
+      </div>
 
       <section id="categories" className="py-20 px-4">
         <div className="max-w-7xl mx-auto">
@@ -47,6 +54,12 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <div className="px-4">
+        <div className="max-w-7xl mx-auto py-8">
+          <AdBanner />
+        </div>
+      </div>
 
       <section className="py-20 px-4">
         <div className="max-w-7xl mx-auto">
