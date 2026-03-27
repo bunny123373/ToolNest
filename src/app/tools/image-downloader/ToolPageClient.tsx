@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, FormEvent } from 'react';
+import { useState, FormEvent } from 'react';
 
 interface ImageInfo {
   url: string;
@@ -61,7 +61,6 @@ export default function ToolPageClient() {
       };
       
       img.onerror = () => {
-        // Try without crossOrigin
         const img2 = new Image();
         img2.onload = () => {
           resolve({
@@ -78,60 +77,6 @@ export default function ToolPageClient() {
       
       img.src = url;
     });
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setImageInfo(null);
-    setLoading(true);
-
-    if (!imageUrl.trim()) {
-      setError('Please enter an image URL');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      let url = imageUrl.startsWith('http') ? imageUrl : 'https://' + imageUrl;
-      
-      // Handle Google Images format - extract imgurl parameter
-      if (url.includes('imgurl=')) {
-        const match = url.match(/imgurl=([^&]+)/);
-        if (match && match[1]) {
-          try {
-            url = decodeURIComponent(match[1]);
-          } catch {
-            // Keep original URL if decode fails
-          }
-        }
-      }
-      
-      if (!isValidImageUrl(url)) {
-        setError('Please enter a valid image URL');
-        setLoading(false);
-        return;
-      }
-
-      const info = await fetchImageInfo(url);
-      
-      if (info) {
-        setImageInfo(info);
-        setError('');
-      } else {
-        // Try with different CORS settings - try direct link
-        const directInfo = await tryFetchDirect(url);
-        if (directInfo) {
-          setImageInfo(directInfo);
-        } else {
-          setError('Could not load image. The server may be blocking access. Try a different URL.');
-        }
-      }
-    } catch (err) {
-      setError('Failed to fetch image. Please try again.');
-    } finally {
-      setLoading(false);
-    }
   };
 
   const tryFetchDirect = async (url: string): Promise<ImageInfo | null> => {
@@ -155,6 +100,58 @@ export default function ToolPageClient() {
       });
     } catch {
       return null;
+    }
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setImageInfo(null);
+    setLoading(true);
+
+    if (!imageUrl.trim()) {
+      setError('Please enter an image URL');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      let url = imageUrl.startsWith('http') ? imageUrl : 'https://' + imageUrl;
+      
+      if (url.includes('imgurl=')) {
+        const match = url.match(/imgurl=([^&]+)/);
+        if (match && match[1]) {
+          try {
+            url = decodeURIComponent(match[1]);
+          } catch {
+            // Keep original URL
+          }
+        }
+      }
+      
+      if (!isValidImageUrl(url)) {
+        setError('Please enter a valid image URL');
+        setLoading(false);
+        return;
+      }
+
+      const info = await fetchImageInfo(url);
+      
+      if (info) {
+        setImageInfo(info);
+        setError('');
+      } else {
+        const directInfo = await tryFetchDirect(url);
+        if (directInfo) {
+          setImageInfo(directInfo);
+        } else {
+          setError('Could not load image. The server may be blocking access. Try a different URL.');
+        }
+      }
+    } catch (err) {
+      setError('Failed to fetch image. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -189,12 +186,10 @@ export default function ToolPageClient() {
         throw new Error('Fetch failed');
       }
     } catch {
-      // Alternative: force download using a download approach
       try {
         const ext = imageInfo.url.split('.').pop()?.split('?')[0] || 'jpg';
         const fileName = `image-${Date.now()}.${ext}`;
         
-        // Use anchor with download attribute - no new tab
         const link = document.createElement('a');
         link.href = imageInfo.url;
         link.download = fileName;
@@ -204,11 +199,9 @@ export default function ToolPageClient() {
         link.click();
         document.body.removeChild(link);
       } catch (e) {
-        // Last resort: open in new tab but warn user
         console.error('Download failed:', e);
       }
     }
-  };
   };
 
   const clearAll = () => {
