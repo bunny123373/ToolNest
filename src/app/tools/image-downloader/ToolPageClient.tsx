@@ -155,53 +155,22 @@ export default function ToolPageClient() {
     }
   };
 
-  const downloadImage = async () => {
+  const downloadImage = () => {
     if (!imageInfo) return;
 
-    try {
-      const response = await fetch(imageInfo.url, { 
-        mode: 'cors',
-        credentials: 'omit'
-      });
-      
-      if (response.ok) {
-        const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
-        
-        const ext = imageInfo.url.split('.').pop()?.split('?')[0] || 'jpg';
-        const fileName = `image-${Date.now()}.${ext}`;
-        
-        const link = document.createElement('a');
-        link.href = objectUrl;
-        link.download = fileName;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        
-        setTimeout(() => {
-          document.body.removeChild(link);
-          URL.revokeObjectURL(objectUrl);
-        }, 100);
-      } else {
-        throw new Error('Fetch failed');
-      }
-    } catch {
-      try {
-        const ext = imageInfo.url.split('.').pop()?.split('?')[0] || 'jpg';
-        const fileName = `image-${Date.now()}.${ext}`;
-        
-        const link = document.createElement('a');
-        link.href = imageInfo.url;
-        link.download = fileName;
-        link.rel = 'noopener noreferrer';
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (e) {
-        console.error('Download failed:', e);
-      }
-    }
+    const ext = imageInfo.url.split('.').pop()?.split('?')[0] || 'jpg';
+    const fileName = `image-${Date.now()}.${ext}`;
+    
+    const link = document.createElement('a');
+    link.href = imageInfo.url;
+    link.download = fileName;
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    
+    setTimeout(() => {
+      document.body.removeChild(link);
+    }, 100);
   };
 
   const clearAll = () => {

@@ -102,6 +102,14 @@ export const tools: Tool[] = [
     icon: '📥',
     badge: 'trending',
   },
+  {
+    id: 'pdf-to-jpg',
+    title: 'PDF to JPG Converter',
+    description: 'Convert PDF pages to high-quality JPG images',
+    route: '/tools/pdf-to-jpg',
+    category: 'pdf',
+    icon: '📸',
+  },
 ];
 
 export const getTrendingTools = (): Tool[] => {
