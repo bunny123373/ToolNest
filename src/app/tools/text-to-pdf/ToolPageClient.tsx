@@ -27,49 +27,57 @@ export default function ToolPageClient() {
       const pageHeight = 842;
       const margin = 50;
       const lineHeight = fontSize * 1.5;
-      
       const contentWidth = pageWidth - (margin * 2);
+      
       const lines: string[] = [];
+      const paragraphs = text.split('\n');
       
-      const words = text.split(' ');
-      let currentLine = '';
-      
-      for (const word of words) {
-        const testLine = currentLine ? currentLine + ' ' + word : word;
-        const textWidth = font.widthOfTextAtSize(testLine, fontSize);
+      for (const paragraph of paragraphs) {
+        const words = paragraph.split(' ');
+        let currentLine = '';
         
-        if (textWidth <= contentWidth) {
-          currentLine = testLine;
-        } else {
-          if (currentLine) lines.push(currentLine);
-          currentLine = word;
+        for (const word of words) {
+          const testLine = currentLine ? currentLine + ' ' + word : word;
+          const textWidth = font.widthOfTextAtSize(testLine, fontSize);
+          
+          if (textWidth <= contentWidth) {
+            currentLine = testLine;
+          } else {
+            if (currentLine) lines.push(currentLine);
+            currentLine = word;
+          }
         }
+        if (currentLine) lines.push(currentLine);
+        lines.push('');
       }
-      if (currentLine) lines.push(currentLine);
       
-      const linesPerPage = Math.floor((pageHeight - margin * 2) / lineHeight);
       let currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
       let yPosition = pageHeight - margin;
       
-      if (title) {
+      if (title.trim()) {
         const titleFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-        const titleSize = fontSize + 4;
-        currentPage.drawText(title, {
+        const titleSize = fontSize + 6;
+        currentPage.drawText(title.trim(), {
           x: margin,
           y: yPosition - titleSize,
           size: titleSize,
           font: titleFont,
         });
-        yPosition -= titleSize + lineHeight;
+        yPosition -= titleSize + lineHeight * 2;
       }
       
-      for (let i = 0; i < lines.length; i++) {
+      for (const line of lines) {
+        if (line === '') {
+          yPosition -= lineHeight / 2;
+          continue;
+        }
+        
         if (yPosition < margin) {
           currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
           yPosition = pageHeight - margin;
         }
         
-        currentPage.drawText(lines[i], {
+        currentPage.drawText(line, {
           x: margin,
           y: yPosition,
           size: fontSize,
@@ -82,11 +90,11 @@ export default function ToolPageClient() {
       const pdfBytes = await pdfDoc.save();
       const buffer = pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer;
       const blob = new Blob([buffer], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
       
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${title || 'document'}-${Date.now()}.pdf`;
+      link.download = `${title.trim() || 'document'}-${Date.now()}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
