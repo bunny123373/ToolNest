@@ -20,11 +20,26 @@ export default function ToolPageClient() {
     try {
       const urlObj = new URL(url);
       const pathname = urlObj.pathname.toLowerCase();
-      return /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)$/i.test(pathname) || 
-             pathname.includes('image') ||
-             urlObj.hostname.includes('img') ||
-             urlObj.hostname.includes('photo') ||
-             urlObj.hostname.includes('picture');
+      const search = urlObj.search.toLowerCase();
+      const hostname = urlObj.hostname.toLowerCase();
+      
+      const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico|jfif|avif|heic|heif)$/i;
+      
+      return (
+        imageExtensions.test(pathname) ||
+        imageExtensions.test(search) ||
+        pathname.includes('image') ||
+        search.includes('imgurl') ||
+        search.includes('image') ||
+        hostname.includes('img') ||
+        hostname.includes('photo') ||
+        hostname.includes('picture') ||
+        hostname.includes('google') ||
+        hostname.includes('cdn') ||
+        hostname.includes('unsplash') ||
+        hostname.includes('pexels') ||
+        hostname.includes('pixabay')
+      );
     } catch {
       return false;
     }
@@ -66,7 +81,19 @@ export default function ToolPageClient() {
     }
 
     try {
-      const url = imageUrl.startsWith('http') ? imageUrl : 'https://' + imageUrl;
+      let url = imageUrl.startsWith('http') ? imageUrl : 'https://' + imageUrl;
+      
+      // Handle Google Images format - extract imgurl parameter
+      if (url.includes('imgurl=')) {
+        const match = url.match(/imgurl=([^&]+)/);
+        if (match && match[1]) {
+          try {
+            url = decodeURIComponent(match[1]);
+          } catch {
+            // Keep original URL if decode fails
+          }
+        }
+      }
       
       if (!isValidImageUrl(url)) {
         setError('Please enter a valid image URL');
