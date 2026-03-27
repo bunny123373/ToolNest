@@ -110,6 +110,22 @@ export const tools: Tool[] = [
     category: 'pdf',
     icon: '📸',
   },
+  {
+    id: 'image-to-pdf',
+    title: 'Image to PDF Converter',
+    description: 'Convert multiple images to a single PDF',
+    route: '/tools/image-to-pdf',
+    category: 'image',
+    icon: '📑',
+  },
+  {
+    id: 'text-to-pdf',
+    title: 'Text to PDF Converter',
+    description: 'Convert text to PDF document',
+    route: '/tools/text-to-pdf',
+    category: 'text',
+    icon: '📄',
+  },
 ];
 
 export const getTrendingTools = (): Tool[] => {
