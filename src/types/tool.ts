@@ -5,7 +5,7 @@ export interface Tool {
   route: string;
   category: string;
   icon: string;
-  badge?: 'trending' | 'recent' | 'popular';
+  badge?: 'trending' | 'recent' | 'popular' | 'new';
 }
 
 export interface ToolCategory {

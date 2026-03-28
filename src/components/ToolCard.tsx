@@ -12,6 +12,7 @@ export default function ToolCard({ tool }: ToolCardProps) {
     trending: 'bg-orange-500/20 text-orange-400',
     recent: 'bg-blue-500/20 text-blue-400',
     popular: 'bg-purple-500/20 text-purple-400',
+    new: 'bg-green-500/20 text-green-400',
   };
 
   return (
