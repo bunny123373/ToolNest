@@ -62,7 +62,7 @@ function validateEmail(email: string): ValidationResult {
   }
 
   const commonTypos = { 'gmial.com': 'gmail.com', 'gmal.com': 'gmail.com', 'hotmial.com': 'hotmail.com' };
-  const typoSuggestion = Object.entries(typos).find(([typo]) => domain.toLowerCase().includes(typo));
+  const typoSuggestion = Object.entries(commonTypos).find(([typo]) => domain.toLowerCase().includes(typo));
   if (typoSuggestion) {
     issues.push(`Did you mean ${typoSuggestion[1]}?`);
     score -= 5;
