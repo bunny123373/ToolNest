@@ -1,6 +1,6 @@
 import { tools } from '@/data/tools';
 
-const baseUrl = 'https://toolsbar.vercel.app';
+const baseUrl = 'https://toolnest.vercel.app';
 
 export const dynamic = 'force-dynamic';
 
