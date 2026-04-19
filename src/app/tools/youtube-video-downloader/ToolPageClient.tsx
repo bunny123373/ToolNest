@@ -2,6 +2,8 @@
 
 import { useState, FormEvent } from 'react';
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+
 interface VideoInfo {
   title: string;
   thumbnail: string;
@@ -16,7 +18,6 @@ interface Format {
   type: string;
   fileSize: string;
   category: 'video' | 'audio' | 'mp3';
-  url?: string;
 }
 
 function parseYouTubeUrl(url: string): string | null {
@@ -35,6 +36,12 @@ function parseYouTubeUrl(url: string): string | null {
     }
   }
   return null;
+}
+
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 export default function ToolPageClient() {
@@ -60,7 +67,7 @@ export default function ToolPageClient() {
     setLoading(true);
 
     try {
-      const response = await fetch(`/api/youtube?id=${videoId}`);
+      const response = await fetch(`${BACKEND_URL}/api/info?id=${videoId}`);
       const data = await response.json();
 
       if (data.error) {
@@ -71,37 +78,37 @@ export default function ToolPageClient() {
       setVideoInfo({
         title: data.title || 'YouTube Video',
         thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-        duration: data.duration || 'Unknown',
-        views: data.views || 'Unknown',
+        duration: data.duration ? formatDuration(data.duration) : 'Unknown',
+        views: data.views ? data.views.toLocaleString() : 'Unknown',
         author: data.author || 'Unknown',
       });
 
-      const formatOptions: Format[] = [
-        { itag: 18, quality: '720p', type: 'MP4 Video (HD)', fileSize: '~50 MB', category: 'video' },
-        { itag: 22, quality: '1080p', type: 'MP4 Video (Full HD)', fileSize: '~150 MB', category: 'video' },
-        { itag: 137, quality: '1080p', type: 'MP4 Video (FHD)', fileSize: '~200 MB', category: 'video' },
-        { itag: 248, quality: '1080p', type: 'WEBM Video (FHD)', fileSize: '~180 MB', category: 'video' },
+      const fmtResponse = await fetch(`${BACKEND_URL}/api/formats?id=${videoId}`);
+      const fmtData = await fmtResponse.json();
+
+      const videoFormats: Format[] = (fmtData.video || []).map((f: any) => ({
+        ...f,
+        category: 'video' as const,
+      }));
+
+      const audioFormats: Format[] = (fmtData.audio || []).map((f: any) => ({
+        ...f,
+        category: 'audio' as const,
+      }));
+
+      const defaultFormats: Format[] = [
+        { itag: 22, quality: '1080p', type: 'MP4', fileSize: '~150 MB', category: 'video' },
+        { itag: 18, quality: '720p', type: 'MP4', fileSize: '~50 MB', category: 'video' },
+        { itag: 140, quality: '128K', type: 'M4A', fileSize: '~8 MB', category: 'audio' },
       ];
 
-      const audioOptions: Format[] = [
-        { itag: 140, quality: '128K', type: 'M4A Audio', fileSize: '~8 MB', category: 'audio' },
-        { itag: 141, quality: '256K', type: 'M4A Audio (High)', fileSize: '~15 MB', category: 'audio' },
-        { itag: 256, quality: '128K', type: 'M4A Audio', fileSize: '~8 MB', category: 'audio' },
-        { itag: 258, quality: '256K', type: 'M4A Audio (High)', fileSize: '~15 MB', category: 'audio' },
-      ];
-
-      const mp3Options: Format[] = [
-        { itag: 320, quality: '128K', type: 'MP3', fileSize: '~5 MB', category: 'mp3' },
-        { itag: 321, quality: '192K', type: 'MP3', fileSize: '~7 MB', category: 'mp3' },
-        { itag: 322, quality: '256K', type: 'MP3', fileSize: '~10 MB', category: 'mp3' },
-        { itag: 323, quality: '320K', type: 'MP3', fileSize: '~12 MB', category: 'mp3' },
-      ];
-
-      setFormats([...formatOptions, ...audioOptions, ...mp3Options]);
-
-      setFormats([...formatOptions, ...audioOptions, ...mp3Options]);
+      if (videoFormats.length > 0 || audioFormats.length > 0) {
+        setFormats([...videoFormats, ...audioFormats]);
+      } else {
+        setFormats(defaultFormats);
+      }
     } catch {
-      setError('Failed to fetch video. Please try again.');
+      setError('Failed to fetch video. Please check if backend is running.');
     } finally {
       setLoading(false);
     }
@@ -114,33 +121,37 @@ export default function ToolPageClient() {
     if (!videoId) return;
 
     try {
-      const response = await fetch('/api/youtube-download', {
+      const endpoint = format.category === 'audio' 
+        ? `${BACKEND_URL}/api/download/audio`
+        : `${BACKEND_URL}/api/download`;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           videoId,
-          format: format.category === 'mp3' ? 'mp3' : format.category === 'audio' ? 'm4a' : 'mp4',
-          quality: format.quality,
+          itag: format.itag,
+          format: format.category === 'audio' ? 'm4a' : 'mp4',
         }),
       });
 
-      const data = await response.json();
-
-      if (data.success && data.downloadUrl) {
-        const filename = `${videoInfo?.title || 'video'}-${format.quality}.${format.category === 'mp3' ? 'mp3' : format.category === 'audio' ? 'm4a' : 'mp4'}`;
+      if (response.ok) {
+        const blob = await response.blob();
+        const filename = `${videoInfo?.title || 'video'}.${format.category === 'audio' ? 'm4a' : 'mp4'}`;
         
         const link = document.createElement('a');
-        link.href = data.downloadUrl;
+        link.href = URL.createObjectURL(blob);
         link.download = filename;
-        link.target = '_blank';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
       } else {
-        window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+        const data = await response.json();
+        setError(data.error || 'Download failed');
       }
     } catch {
-      window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+      setError('Download failed. Please check if backend is running.');
     } finally {
       setTimeout(() => setDownloading(null), 2000);
     }
@@ -185,10 +196,6 @@ export default function ToolPageClient() {
                   src={videoInfo.thumbnail}
                   alt={videoInfo.title}
                   className="w-full rounded-xl"
-                  onError={(e) => {
-                    const img = e.target as HTMLImageElement;
-                    img.src = 'https://img.youtube.com/vi/placeholder/maxresdefault.jpg'.replace('placeholder', parseYouTubeUrl(url) || '');
-                  }}
                 />
               </div>
               <div className="flex-1">
@@ -198,9 +205,6 @@ export default function ToolPageClient() {
                   <span>Duration: {videoInfo.duration}</span>
                   <span>Views: {videoInfo.views}</span>
                 </div>
-                <p className="text-text-secondary text-sm">
-                  Note: Click download to open video. For best results, use a YouTube downloader browser extension.
-                </p>
               </div>
             </div>
           </div>
@@ -209,7 +213,7 @@ export default function ToolPageClient() {
         {formats.length > 0 && (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-text-primary mb-4">Video Formats</h3>
+              <h3 className="text-lg font-semibold text-text-primary mb-4">Video</h3>
               <div className="grid gap-3">
                 {formats.filter(f => f.category === 'video').map((format, index) => (
                   <div
@@ -228,7 +232,7 @@ export default function ToolPageClient() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
-                      {downloading === format.itag ? 'Opening...' : 'Download'}
+                      {downloading === format.itag ? 'Downloading...' : 'Download'}
                     </button>
                   </div>
                 ))}
@@ -236,7 +240,7 @@ export default function ToolPageClient() {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-text-primary mb-4">Audio (M4A)</h3>
+              <h3 className="text-lg font-semibold text-text-primary mb-4">Audio</h3>
               <div className="grid gap-3">
                 {formats.filter(f => f.category === 'audio').map((format, index) => (
                   <div
@@ -255,34 +259,7 @@ export default function ToolPageClient() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
-                      {downloading === format.itag ? 'Opening...' : 'Download'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-text-primary mb-4">MP3 Audio</h3>
-              <div className="grid gap-3">
-                {formats.filter(f => f.category === 'mp3').map((format, index) => (
-                  <div
-                    key={index}
-                    className="bg-surface-elevated border border-border rounded-xl p-4 flex items-center justify-between"
-                  >
-                    <div>
-                      <p className="font-medium text-text-primary">{format.type} ({format.quality})</p>
-                      <p className="text-sm text-text-secondary">{format.fileSize}</p>
-                    </div>
-                    <button
-                      onClick={() => handleDownload(format)}
-                      disabled={downloading === format.itag}
-                      className="px-4 py-2 bg-success hover:bg-success/80 text-white font-medium rounded-lg transition-all flex items-center gap-2 disabled:opacity-50"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      {downloading === format.itag ? 'Opening...' : 'Download'}
+                      {downloading === format.itag ? 'Downloading...' : 'Download'}
                     </button>
                   </div>
                 ))}
@@ -292,26 +269,25 @@ export default function ToolPageClient() {
         )}
 
         <div className="mt-10 p-6 bg-surface-elevated border border-border rounded-2xl">
-          <h2 className="text-lg font-semibold text-text-primary mb-4">How it works</h2>
+          <h2 className="text-lg font-semibold text-text-primary mb-4">How to use</h2>
           <ol className="space-y-3 text-text-secondary">
             <li className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 bg-primary/20 text-primary rounded-full flex items-center justify-center text-sm font-medium">1</span>
-              <span>Paste the YouTube video URL</span>
+              <span>Install Python backend: <code className="bg-surface-hover px-2 py-0.5 rounded">cd server && pip install -r requirements.txt</code></span>
             </li>
             <li className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 bg-primary/20 text-primary rounded-full flex items-center justify-center text-sm font-medium">2</span>
-              <span>Click &quot;Get Video&quot; to fetch video info</span>
+              <span>Run backend: <code className="bg-surface-hover px-2 py-0.5 rounded">python app.py</code></span>
             </li>
             <li className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 bg-primary/20 text-primary rounded-full flex items-center justify-center text-sm font-medium">3</span>
-              <span>Select your preferred format and click Download</span>
+              <span>Paste YouTube URL and click Get Video</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-primary/20 text-primary rounded-full flex items-center justify-center text-sm font-medium">4</span>
+              <span>Select format and click Download</span>
             </li>
           </ol>
-          <div className="mt-4 p-4 bg-warning/10 border border-warning/30 rounded-lg">
-            <p className="text-warning text-sm font-medium">
-              💡 Tip: For the best download experience, we recommend using a browser extension like &quot;Video DownloadHelper&quot; or &quot;YouTube Premium&quot; for direct downloads.
-            </p>
-          </div>
         </div>
       </div>
     </div>
