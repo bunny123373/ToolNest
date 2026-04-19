@@ -2,22 +2,26 @@
 
 import { useState, useMemo } from 'react';
 
-const fontStyles: { name: string; transform: (text: string) => string }[] = [
+const fontStyles: { name: string; transform: (text: string) => string; popular?: boolean }[] = [
   {
     name: 'Small Caps',
     transform: (text) => text.toLowerCase().split('').map(c => c.charCodeAt(0) >= 97 && c.charCodeAt(0) <= 122 ? String.fromCharCode(c.charCodeAt(0) - 97 + 0x1D00) : c).join(''),
+    popular: true,
   },
   {
     name: 'Bold',
     transform: (text) => text.split('').map(c => c.charCodeAt(0) >= 65 && c.charCodeAt(0) <= 90 ? String.fromCharCode(c.charCodeAt(0) - 65 + 0x1D00) : c.charCodeAt(0) >= 97 && c.charCodeAt(0) <= 122 ? String.fromCharCode(c.charCodeAt(0) - 97 + 0x1D00) : c).join(''),
+    popular: true,
   },
   {
     name: 'Italic',
     transform: (text) => text.split('').map(c => c.charCodeAt(0) >= 65 && c.charCodeAt(0) <= 90 ? String.fromCharCode(c.charCodeAt(0) - 65 + 0x1D34) : c.charCodeAt(0) >= 97 && c.charCodeAt(0) <= 122 ? String.fromCharCode(c.charCodeAt(0) - 97 + 0x1D34) : c).join(''),
+    popular: true,
   },
   {
     name: 'Bold Italic',
     transform: (text) => text.split('').map(c => c.charCodeAt(0) >= 65 && c.charCodeAt(0) <= 90 ? String.fromCharCode(c.charCodeAt(0) - 65 + 0x1D20) : c.charCodeAt(0) >= 97 && c.charCodeAt(0) <= 122 ? String.fromCharCode(c.charCodeAt(0) - 97 + 0x1D20) : c).join(''),
+    popular: true,
   },
   {
     name: 'Script',
@@ -38,14 +42,17 @@ const fontStyles: { name: string; transform: (text: string) => string }[] = [
   {
     name: 'Circles',
     transform: (text) => text.split('').map(c => c.charCodeAt(0) >= 65 && c.charCodeAt(0) <= 90 ? String.fromCharCode(c.charCodeAt(0) - 65 + 0x24B6) : c.charCodeAt(0) >= 97 && c.charCodeAt(0) <= 122 ? String.fromCharCode(c.charCodeAt(0) - 97 + 0x24D0) : c.charCodeAt(0) >= 48 && c.charCodeAt(0) <= 57 ? String.fromCharCode(c.charCodeAt(0) - 48 + 0x2450) : c).join(''),
+    popular: true,
   },
   {
     name: 'Squares',
     transform: (text) => text.split('').map(c => c.charCodeAt(0) >= 65 && c.charCodeAt(0) <= 90 ? String.fromCharCode(c.charCodeAt(0) - 65 + 0x1F130) : c.charCodeAt(0) >= 97 && c.charCodeAt(0) <= 122 ? String.fromCharCode(c.charCodeAt(0) - 97 + 0x1F130) : c.charCodeAt(0) >= 48 && c.charCodeAt(0) <= 57 ? String.fromCharCode(c.charCodeAt(0) - 48 + 0x1F160) : c).join(''),
+    popular: true,
   },
   {
     name: 'Fullwidth',
     transform: (text) => text.split('').map(c => c.charCodeAt(0) >= 33 && c.charCodeAt(0) <= 126 ? String.fromCharCode(c.charCodeAt(0) - 33 + 0xFF00) : c).join(''),
+    popular: true,
   },
   {
     name: 'Gothic',
@@ -527,6 +534,9 @@ export default function ToolPageClient() {
     }));
   }, [input]);
 
+  const popularResults = useMemo(() => results.filter(r => r.popular), [results]);
+  const regularResults = useMemo(() => results.filter(r => !r.popular), [results]);
+
   const copyToClipboard = async (text: string, styleName: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -546,7 +556,9 @@ export default function ToolPageClient() {
   };
 
   const copyAll = async () => {
-    const allText = results.map(r => `${r.name}: ${r.transformed}`).join('\n\n');
+    const popularText = popularResults.map(r => `${r.name}: ${r.transformed}`).join('\n\n');
+    const regularText = regularResults.map(r => `${r.name}: ${r.transformed}`).join('\n\n');
+    const allText = `POPULAR STYLES\n${popularText}\n\nALL STYLES\n${regularText}`;
     try {
       await navigator.clipboard.writeText(allText);
       alert('All fonts copied!');
@@ -601,37 +613,85 @@ export default function ToolPageClient() {
         )}
 
         <div className="grid gap-4">
-          {results.map((result) => (
-            <div
-              key={result.name}
-              className="bg-surface-elevated border border-border rounded-2xl p-4"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-text-secondary text-sm font-medium">{result.name}</span>
-                <button
-                  onClick={() => copyToClipboard(result.transformed, result.name)}
-                  className="px-3 py-1.5 text-sm bg-surface-hover hover:bg-primary/20 text-text-primary hover:text-primary rounded-lg transition-all flex items-center gap-1.5"
-                >
-                  {copied === result.name ? (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      Copy
-                    </>
-                  )}
-                </button>
+          {results.length > 0 && (
+            <>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-lg font-semibold text-text-primary">Popular</span>
+                <span className="px-2 py-0.5 text-xs bg-primary/20 text-primary rounded-full">{popularResults.length}</span>
               </div>
-              <p className="text-xl text-text-primary font-medium overflow-x-auto whitespace-nowrap">{result.transformed}</p>
-            </div>
-          ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {popularResults.map((result) => (
+                  <div
+                    key={result.name}
+                    className="bg-surface-elevated border-2 border-primary/30 rounded-2xl p-4"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-text-secondary text-sm font-medium">{result.name}</span>
+                      <button
+                        onClick={() => copyToClipboard(result.transformed, result.name)}
+                        className="px-3 py-1.5 text-sm bg-surface-hover hover:bg-primary/20 text-text-primary hover:text-primary rounded-lg transition-all flex items-center gap-1.5"
+                      >
+                        {copied === result.name ? (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            Copy
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xl text-text-primary font-medium overflow-x-auto whitespace-nowrap">{result.transformed}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 mb-4 mt-8">
+                <span className="text-lg font-semibold text-text-primary">All Fonts</span>
+                <span className="px-2 py-0.5 text-xs bg-surface-hover text-text-secondary rounded-full">{regularResults.length}</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {regularResults.map((result) => (
+                  <div
+                    key={result.name}
+                    className="bg-surface-elevated border border-border rounded-2xl p-4"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-text-secondary text-sm font-medium">{result.name}</span>
+                      <button
+                        onClick={() => copyToClipboard(result.transformed, result.name)}
+                        className="px-3 py-1.5 text-sm bg-surface-hover hover:bg-primary/20 text-text-primary hover:text-primary rounded-lg transition-all flex items-center gap-1.5"
+                      >
+                        {copied === result.name ? (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            Copy
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xl text-text-primary font-medium overflow-x-auto whitespace-nowrap">{result.transformed}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {results.length > 0 && (

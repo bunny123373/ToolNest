@@ -322,6 +322,15 @@ export const tools: Tool[] = [
     icon: 'text-tools',
     badge: 'new',
   },
+  {
+    id: 'youtube-video-downloader',
+    title: 'YouTube Video Downloader',
+    description: 'Download YouTube videos and audio in multiple formats',
+    route: '/tools/youtube-video-downloader',
+    category: 'image',
+    icon: 'video',
+    badge: 'new',
+  },
 ];
 
 export const getTrendingTools = (): Tool[] => {
