@@ -313,6 +313,15 @@ export const tools: Tool[] = [
     icon: 'link',
     badge: 'new',
   },
+  {
+    id: 'fonts-copy-paste',
+    title: 'Fonts Copy Paste Style',
+    description: 'Copy and paste text with fancy fonts and styles',
+    route: '/tools/fonts-copy-paste',
+    category: 'text',
+    icon: 'text-tools',
+    badge: 'new',
+  },
 ];
 
 export const getTrendingTools = (): Tool[] => {
