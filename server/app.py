@@ -7,8 +7,30 @@ import requests
 
 app = Flask(__name__)
 
-# Initialize innertube client
-yt_client = innertube.InnerTube("WEB")
+# Initialize innertube client - try different clients to bypass bot protection
+def get_client():
+    for client_name in ["ANDROID", "WEB", "IOS"]:
+        try:
+            return innertube.InnerTube(client_name)
+        except:
+            continue
+    return innertube.InnerTube("WEB")
+
+yt_client = get_client()
+
+@app.route('/api/debug', methods=['GET'])
+def debug():
+    video_id = request.args.get('id', 'dQw4w9WgXcQ')
+    try:
+        player = yt_client.player(video_id)
+        return jsonify({
+            'keys': list(player.keys()) if isinstance(player, dict) else 'not dict',
+            'streamingData_keys': list(player.get('streamingData', {}).keys()) if player.get('streamingData') else 'no streamingData',
+            'formats_count': len(player.get('streamingData', {}).get('formats', [])),
+            'adaptive_count': len(player.get('streamingData', {}).get('adaptiveFormats', [])),
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 @app.after_request
 def add_cors_headers(response):
