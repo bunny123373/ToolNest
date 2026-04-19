@@ -50,7 +50,8 @@ def get_info():
         'quiet': True,
         'no_warnings': True,
         'extract_flat': False,
-        'socket_timeout': 30,
+        'socket_timeout': 60,
+        'retries': 3,
     }
     
     try:
