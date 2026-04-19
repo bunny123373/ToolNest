@@ -39,6 +39,30 @@ def parse_youtube_url(url):
 def health_check():
     return jsonify({'status': 'ok', 'service': 'youtube-downloader'})
 
+@app.route('/api/test', methods=['GET'])
+def test_api():
+    # Test Invidious
+    invidious_test = None
+    for instance in ['https://invidious.jingl.xyz', 'https://yewtu.be']:
+        try:
+            r = requests.get(f'{instance}/api/v1/videos/dQw4w9WgXcQ', timeout=10)
+            invidious_test = {'instance': instance, 'status': r.status_code}
+            break
+        except Exception as e:
+            invidious_test = {'instance': instance, 'error': str(e)}
+    
+    # Test Piped
+    piped_test = None
+    for instance in ['https://api.piped.sh']:
+        try:
+            r = requests.get(f'{instance}/streams/dQw4w9WgXcQ', timeout=10)
+            piped_test = {'instance': instance, 'status': r.status_code}
+            break
+        except Exception as e:
+            piped_test = {'instance': instance, 'error': str(e)}
+    
+    return jsonify({'invidious': invidious_test, 'piped': piped_test})
+
 @app.route('/api/info', methods=['GET'])
 def get_info():
     video_id = request.args.get('id')
