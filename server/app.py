@@ -3,6 +3,7 @@ from flask_cors import CORS
 import yt_dlp
 import os
 import tempfile
+import requests
 
 app = Flask(__name__)
 
@@ -44,41 +45,41 @@ def get_info():
     if not video_id:
         return jsonify({'error': 'Video ID is required'}), 400
     
-    url = f'https://www.youtube.com/watch?v={video_id}'
+    # Use Invidious instances (no auth needed)
+    invidious_instances = [
+        'https://invidious.jingl.xyz',
+        'https://invidious.adamantame.com',
+        'https://yewtu.be',
+    ]
     
-    ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'extract_flat': False,
-        'socket_timeout': 60,
-        'retries': 3,
-    }
+    for instance in invidious_instances:
+        try:
+            response = requests.get(f'{instance}/api/v1/videos/{video_id}', timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                
+                thumbnails = []
+                if data.get('thumbnailUrl'):
+                    thumbnails.append(data['thumbnailUrl'])
+                if data.get('relatedVideos'):
+                    for v in data.get('relatedVideos', []):
+                        if v.get('thumbnailUrl') and v['thumbnailUrl'] not in thumbnails:
+                            thumbnails.append(v['thumbnailUrl'])
+                
+                duration = data.get('lengthSeconds', 0)
+                
+                return jsonify({
+                    'title': data.get('title') or 'YouTube Video',
+                    'author': data.get('author') or 'Unknown',
+                    'duration': duration,
+                    'views': data.get('viewCount') or 0,
+                    'thumbnails': thumbnails,
+                    'videoId': video_id,
+                })
+        except Exception as e:
+            continue
     
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            
-            if not info:
-                return jsonify({'error': 'Could not fetch video'}), 500
-            
-            thumbnails = []
-            thumb = info.get('thumbnail')
-            if thumb:
-                thumbnails.append(thumb)
-            for t in info.get('thumbnails', []):
-                if t and t.get('url') and t['url'] not in thumbnails:
-                    thumbnails.append(t['url'])
-            
-            return jsonify({
-                'title': info.get('title') or 'YouTube Video',
-                'author': info.get('uploader') or 'Unknown',
-                'duration': info.get('duration') or 0,
-                'views': info.get('view_count') or 0,
-                'thumbnails': thumbnails,
-                'videoId': video_id,
-            })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    return jsonify({'error': 'Could not fetch video'}), 500
 
 @app.route('/api/formats', methods=['GET'])
 def get_formats():
@@ -86,57 +87,45 @@ def get_formats():
     if not video_id:
         return jsonify({'error': 'Video ID is required'}), 400
     
-    url = f'https://www.youtube.com/watch?v={video_id}'
+    # Use Piped API (no auth needed)
+    piped_instances = [
+        'https://api.piped.sh',
+        'https://pipedapi.tube',
+    ]
     
-    ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'extract_flat': False,
-        'socket_timeout': 30,
-        'listformats': True,
-    }
-    
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            
-            formats = []
-            
-            if not info or not info.get('formats'):
-                return jsonify({'video': [], 'audio': []})
-            
-            for fmt in info.get('formats', []):
-                if not fmt:
-                    continue
-                fmt_id = fmt.get('format_id', '') or ''
-                ext = fmt.get('ext', '') or ''
-                quality = fmt.get('resolution') or str(fmt.get('height', ''))
-                filesize = fmt.get('filesize') or fmt.get('filesize_approx') or 0
+    for instance in piped_instances:
+        try:
+            response = requests.get(f'{instance}/streams/{video_id}', timeout=30)
+            if response.status_code == 200:
+                data = response.json()
                 
-                if filesize:
-                    filesize_mb = filesize / (1024 * 1024)
-                    filesize_str = f'~{int(filesize_mb)} MB'
-                else:
-                    filesize_str = 'Unknown'
+                video_formats = []
+                audio_formats = []
                 
-                if ext in ['mp4', 'webm', 'm4a']:
-                    formats.append({
-                        'itag': fmt_id,
-                        'quality': str(quality),
-                        'type': f'{ext.upper()} ({quality})',
+                # Video streams
+                for stream in data.get('videoStreams', []):
+                    quality = stream.get('quality', '')
+                    codec = stream.get('codec', '') or ''
+                    filesize = stream.get('size', 0) or 0
+                    
+                    if filesize:
+                        filesize_mb = filesize / (1024 * 1024)
+                        filesize_str = f'~{int(filesize_mb)} MB'
+                    else:
+                        filesize_str = 'Unknown'
+                    
+                    video_formats.append({
+                        'itag': stream.get('itag', quality),
+                        'quality': quality,
+                        'type': f'MP4 ({quality})',
                         'fileSize': filesize_str,
                     })
-            
-            audio_formats = []
-            for fmt in info.get('formats', []):
-                if not fmt:
-                    continue
-                fmt_id = fmt.get('format_id', '') or ''
-                ext = fmt.get('ext', '') or ''
-                quality = fmt.get('abr', 0) or 0
-                filesize = fmt.get('filesize') or fmt.get('filesize_approx') or 0
                 
-                if ext in ['m4a', 'webm'] and quality > 0:
+                # Audio streams
+                for stream in data.get('audioStreams', []):
+                    bitrate = stream.get('bitrate', '') or ''
+                    filesize = stream.get('size', 0) or 0
+                    
                     if filesize:
                         filesize_mb = filesize / (1024 * 1024)
                         filesize_str = f'~{int(filesize_mb)} MB'
@@ -144,18 +133,20 @@ def get_formats():
                         filesize_str = 'Unknown'
                     
                     audio_formats.append({
-                        'itag': fmt_id,
-                        'quality': f'{quality}K',
-                        'type': f'{ext.upper()} Audio',
+                        'itag': bitrate,
+                        'quality': bitrate,
+                        'type': 'M4A Audio',
                         'fileSize': filesize_str,
                     })
-            
-            return jsonify({
-                'video': formats[:6],
-                'audio': audio_formats[:4],
-            })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+                
+                return jsonify({
+                    'video': video_formats[:6],
+                    'audio': audio_formats[:4],
+                })
+        except Exception as e:
+            continue
+    
+    return jsonify({'video': [], 'audio': []})
 
 @app.route('/api/download', methods=['POST'])
 def download():
@@ -166,83 +157,94 @@ def download():
     if not video_id:
         return jsonify({'error': 'Video ID is required'}), 400
     
-    url = f'https://www.youtube.com/watch?v={video_id}'
+    # Use Piped API for direct URL
+    piped_instances = ['https://api.piped.sh', 'https://pipedapi.tube']
     
-    output_template = os.path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s')
+    for instance in piped_instances:
+        try:
+            response = requests.get(f'{instance}/streams/{video_id}', timeout=30)
+            if response.status_code == 200:
+                streams_data = response.json()
+                
+                # Get video stream
+                video_streams = streams_data.get('videoStreams', [])
+                audio_streams = streams_data.get('audioStreams', [])
+                
+                # Try to find requested quality or get best
+                download_url = None
+                filename = 'video.mp4'
+                
+                if video_streams:
+                    if itag:
+                        for v in video_streams:
+                            if str(v.get('itag')) == str(itag):
+                                download_url = v.get('url')
+                                break
+                    if not download_url:
+                        download_url = video_streams[0].get('url')
+                    filename = f"{streams_data.get('title', 'video')}.mp4"
+                
+                if download_url:
+                    # Fetch and serve the file
+                    video_response = requests.get(download_url, stream=True, timeout=120)
+                    if video_response.status_code == 200:
+                        temp_file = os.path.join(DOWNLOAD_DIR, filename)
+                        with open(temp_file, 'wb') as f:
+                            for chunk in video_response.iter_content(chunk_size=8192):
+                                f.write(chunk)
+                        
+                        return send_file(
+                            temp_file,
+                            as_attachment=True,
+                            download_name=filename
+                        )
+        except Exception as e:
+            continue
     
-    ydl_opts = {
-        'format': f'best[format_id={itag}]' if itag else 'bestvideo+bestaudio/best',
-        'outtmpl': output_template,
-        'quiet': True,
-        'no_warnings': True,
-    }
-    
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            filepath = ydl.prepare_filename(info)
-            
-            if os.path.exists(filepath):
-                return send_file(
-                    filepath,
-                    as_attachment=True,
-                    download_name=os.path.basename(filepath)
-                )
-            else:
-                return jsonify({'error': 'Download failed'}), 500
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    return jsonify({'error': 'Download failed'}), 500
 
 @app.route('/api/download/audio', methods=['POST'])
 def download_audio():
     data = request.get_json()
     video_id = data.get('videoId')
-    format_type = data.get('format', 'mp3')
-    quality = data.get('quality', '192')
+    format_type = data.get('format', 'm4a')
     
     if not video_id:
         return jsonify({'error': 'Video ID is required'}), 400
     
-    url = f'https://www.youtube.com/watch?v={video_id}'
+    # Use Piped API for direct URL
+    piped_instances = ['https://api.piped.sh', 'https://pipedapi.tube']
     
-    if format_type == 'mp3':
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': os.path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s'),
-            'quiet': True,
-            'no_warnings': True,
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': quality,
-            }],
-        }
-    else:
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': os.path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s'),
-            'quiet': True,
-            'no_warnings': True,
-        }
+    for instance in piped_instances:
+        try:
+            response = requests.get(f'{instance}/streams/{video_id}', timeout=30)
+            if response.status_code == 200:
+                streams_data = response.json()
+                
+                audio_streams = streams_data.get('audioStreams', [])
+                
+                if audio_streams:
+                    download_url = audio_streams[0].get('url')
+                    ext = 'm4a' if format_type == 'm4a' else 'mp3'
+                    filename = f"{streams_data.get('title', 'audio')}.{ext}"
+                    
+                    if download_url:
+                        audio_response = requests.get(download_url, stream=True, timeout=120)
+                        if audio_response.status_code == 200:
+                            temp_file = os.path.join(DOWNLOAD_DIR, filename)
+                            with open(temp_file, 'wb') as f:
+                                for chunk in audio_response.iter_content(chunk_size=8192):
+                                    f.write(chunk)
+                            
+                            return send_file(
+                                temp_file,
+                                as_attachment=True,
+                                download_name=filename
+                            )
+        except Exception as e:
+            continue
     
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            filepath = ydl.prepare_filename(info)
-            
-            if format_type == 'mp3' and filepath:
-                filepath = filepath.rsplit('.', 1)[0] + '.mp3'
-            
-            if os.path.exists(filepath):
-                return send_file(
-                    filepath,
-                    as_attachment=True,
-                    download_name=os.path.basename(filepath)
-                )
-            else:
-                return jsonify({'error': 'Download failed'}), 500
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    return jsonify({'error': 'Download failed'}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
