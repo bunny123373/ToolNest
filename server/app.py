@@ -84,10 +84,12 @@ def get_formats():
             formats = []
             
             for fmt in info.get('formats', []):
-                fmt_id = fmt.get('format_id', '')
-                ext = fmt.get('ext', '')
-                quality = fmt.get('resolution', fmt.get('height', ''))
-                filesize = fmt.get('filesize') or fmt.get('filesize_approx', 0)
+                if not fmt:
+                    continue
+                fmt_id = fmt.get('format_id', '') or ''
+                ext = fmt.get('ext', '') or ''
+                quality = fmt.get('resolution') or str(fmt.get('height', ''))
+                filesize = fmt.get('filesize') or fmt.get('filesize_approx') or 0
                 
                 if filesize:
                     filesize_mb = filesize / (1024 * 1024)
@@ -105,10 +107,12 @@ def get_formats():
             
             audio_formats = []
             for fmt in info.get('formats', []):
-                fmt_id = fmt.get('format_id', '')
-                ext = fmt.get('ext', '')
-                quality = fmt.get('abr', 0)
-                filesize = fmt.get('filesize') or fmt.get('filesize_approx', 0)
+                if not fmt:
+                    continue
+                fmt_id = fmt.get('format_id', '') or ''
+                ext = fmt.get('ext', '') or ''
+                quality = fmt.get('abr', 0) or 0
+                filesize = fmt.get('filesize') or fmt.get('filesize_approx') or 0
                 
                 if ext in ['m4a', 'webm'] and quality > 0:
                     if filesize:
