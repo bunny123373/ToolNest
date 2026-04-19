@@ -1,11 +1,18 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
-import pytube
+from pytube import YouTube
+from pytube.exceptions import RegexMatchError, VideoUnavailable
 import os
 import tempfile
 import requests
 
 app = Flask(__name__)
+
+# Browser headers to avoid 400
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept-Language': 'en-US,en;q=0.9',
+}
 
 @app.after_request
 def add_cors_headers(response):
@@ -30,7 +37,7 @@ def get_info():
     
     try:
         url = f'https://www.youtube.com/watch?v={video_id}'
-        yt = pytube.YouTube(url)
+        yt = YouTube(url, use_oauth=False, allow_oauth_cache=False, headers=HEADERS)
         
         return jsonify({
             'title': yt.title or 'YouTube Video',
@@ -51,7 +58,7 @@ def get_formats():
     
     try:
         url = f'https://www.youtube.com/watch?v={video_id}'
-        yt = pytube.YouTube(url)
+        yt = YouTube(url, use_oauth=False, allow_oauth_cache=False, headers=HEADERS)
         
         video_formats = []
         for stream in yt.streams.filter(only_video=True):
@@ -89,7 +96,7 @@ def download():
     
     try:
         url = f'https://www.youtube.com/watch?v={video_id}'
-        yt = pytube.YouTube(url)
+        yt = YouTube(url, use_oauth=False, allow_oauth_cache=False, headers=HEADERS)
         
         if itag:
             stream = yt.streams.get_by_itag(int(itag))
@@ -121,7 +128,7 @@ def download_audio():
     
     try:
         url = f'https://www.youtube.com/watch?v={video_id}'
-        yt = pytube.YouTube(url)
+        yt = YouTube(url, use_oauth=False, allow_oauth_cache=False, headers=HEADERS)
         
         stream = yt.streams.filter(only_audio=True).first()
         
