@@ -99,7 +99,7 @@ export default function ToolPageClient() {
 
       setFormats([...formatOptions, ...audioOptions, ...mp3Options]);
 
-      setFormats(formatOptions);
+      setFormats([...formatOptions, ...audioOptions, ...mp3Options]);
     } catch {
       setError('Failed to fetch video. Please try again.');
     } finally {
@@ -114,8 +114,25 @@ export default function ToolPageClient() {
     if (!videoId) return;
 
     try {
-      const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-      window.open(videoUrl, '_blank');
+      const response = await fetch('/api/youtube-download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoId,
+          format: format.category === 'mp3' ? 'mp3' : format.category === 'audio' ? 'm4a' : 'mp4',
+          quality: format.quality,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.downloadUrl) {
+        window.open(data.downloadUrl, '_blank');
+      } else {
+        window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+      }
+    } catch {
+      window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
     } finally {
       setTimeout(() => setDownloading(null), 2000);
     }
