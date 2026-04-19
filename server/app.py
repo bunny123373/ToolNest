@@ -34,6 +34,10 @@ def parse_youtube_url(url):
             return match.group(1)
     return None
 
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'ok', 'service': 'youtube-downloader'})
+
 @app.route('/api/info', methods=['GET'])
 def get_info():
     video_id = request.args.get('id')
