@@ -127,7 +127,15 @@ export default function ToolPageClient() {
       const data = await response.json();
 
       if (data.success && data.downloadUrl) {
-        window.open(data.downloadUrl, '_blank');
+        const filename = `${videoInfo?.title || 'video'}-${format.quality}.${format.category === 'mp3' ? 'mp3' : format.category === 'audio' ? 'm4a' : 'mp4'}`;
+        
+        const link = document.createElement('a');
+        link.href = data.downloadUrl;
+        link.download = filename;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } else {
         window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
       }
