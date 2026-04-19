@@ -46,24 +46,29 @@ def get_info():
         'quiet': True,
         'no_warnings': True,
         'extract_flat': False,
+        'socket_timeout': 30,
     }
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             
+            if not info:
+                return jsonify({'error': 'Could not fetch video'}), 500
+            
             thumbnails = []
-            if 'thumbnail' in info:
-                thumbnails.append(info['thumbnail'])
-            for thumb in info.get('thumbnails', []):
-                if thumb['url'] not in thumbnails:
-                    thumbnails.append(thumb['url'])
+            thumb = info.get('thumbnail')
+            if thumb:
+                thumbnails.append(thumb)
+            for t in info.get('thumbnails', []):
+                if t and t.get('url') and t['url'] not in thumbnails:
+                    thumbnails.append(t['url'])
             
             return jsonify({
-                'title': info.get('title', 'YouTube Video'),
-                'author': info.get('uploader', 'Unknown'),
-                'duration': info.get('duration', 0),
-                'views': info.get('view_count', 0),
+                'title': info.get('title') or 'YouTube Video',
+                'author': info.get('uploader') or 'Unknown',
+                'duration': info.get('duration') or 0,
+                'views': info.get('view_count') or 0,
                 'thumbnails': thumbnails,
                 'videoId': video_id,
             })
@@ -82,6 +87,7 @@ def get_formats():
         'quiet': True,
         'no_warnings': True,
         'extract_flat': False,
+        'socket_timeout': 30,
         'listformats': True,
     }
     
@@ -90,6 +96,9 @@ def get_formats():
             info = ydl.extract_info(url, download=False)
             
             formats = []
+            
+            if not info or not info.get('formats'):
+                return jsonify({'video': [], 'audio': []})
             
             for fmt in info.get('formats', []):
                 if not fmt:
