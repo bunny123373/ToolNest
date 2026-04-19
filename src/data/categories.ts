@@ -37,7 +37,7 @@ export const categories: Category[] = [
     id: 'developer',
     name: 'Developer Tools',
     icon: 'developer',
-    toolCount: 12,
+    toolCount: 17,
     description: 'Tools for developers',
     route: '/tools?category=developer',
   },

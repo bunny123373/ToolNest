@@ -277,6 +277,42 @@ export const tools: Tool[] = [
     icon: 'json',
     badge: 'new',
   },
+  {
+    id: 'format-converter',
+    title: 'Format Converter',
+    description: 'Convert between JSON, XML, and YAML formats',
+    route: '/tools/format-converter',
+    category: 'developer',
+    icon: 'swap',
+    badge: 'new',
+  },
+  {
+    id: 'text-diff',
+    title: 'Text Diff',
+    description: 'Compare two texts and see the differences',
+    route: '/tools/text-diff',
+    category: 'developer',
+    icon: 'diff',
+    badge: 'new',
+  },
+  {
+    id: 'random-string',
+    title: 'Random String Generator',
+    description: 'Generate random strings with custom patterns',
+    route: '/tools/random-string',
+    category: 'developer',
+    icon: 'random',
+    badge: 'new',
+  },
+  {
+    id: 'url-encoder',
+    title: 'URL Encoder/Decoder',
+    description: 'Encode and decode URL components safely',
+    route: '/tools/url-encoder',
+    category: 'developer',
+    icon: 'link',
+    badge: 'new',
+  },
 ];
 
 export const getTrendingTools = (): Tool[] => {
