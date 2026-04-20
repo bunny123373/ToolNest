@@ -1,8 +1,8 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, redirect
 from flask_cors import CORS
-import yt_dlp
 import os
 import tempfile
+import requests
 
 app = Flask(__name__)
 
@@ -21,19 +21,36 @@ def get_info():
         return jsonify({'error': 'Video ID is required'}), 400
     
     try:
-        ydl_opts = {'quiet': True, 'no_warnings': True, 'skip_download': True}
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(f'https://youtube.com/watch?v={video_id}', download=False)
+        # Use oEmbed API (no authentication needed, but limited)
+        resp = requests.get(f'https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json', timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
             return jsonify({
-                'title': info.get('title', 'YouTube Video'),
-                'author': info.get('uploader', 'Unknown'),
-                'duration': info.get('duration', 0),
-                'views': info.get('view_count', 0),
-                'thumbnails': [info.get('thumbnail')] if info.get('thumbnail') else [],
+                'title': data.get('title', 'YouTube Video'),
+                'author': data.get('author_name', 'Unknown'),
+                'duration': 0,
+                'views': 0,
+                'thumbnails': [f'https://img.youtube.com/vi/{video_id}/maxresdefault.jpg'],
+                'videoId': video_id,
+            })
+        else:
+            return jsonify({
+                'title': 'YouTube Video',
+                'author': 'YouTube',
+                'duration': 0,
+                'views': 0,
+                'thumbnails': [f'https://img.youtube.com/vi/{video_id}/maxresdefault.jpg'],
                 'videoId': video_id,
             })
     except Exception as e:
-        return jsonify({'error': 'Bot verification required. Please use browser extension for download.', 'details': str(e)}), 500
+        return jsonify({
+            'title': 'YouTube Video',
+            'author': 'YouTube',
+            'duration': 0,
+            'views': 0,
+            'thumbnails': [f'https://img.youtube.com/vi/{video_id}/maxresdefault.jpg'],
+            'videoId': video_id,
+        })
 
 @app.route('/api/formats', methods=['GET'])
 def get_formats():
