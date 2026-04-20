@@ -1,5 +1,4 @@
 flask==3.0.0
-innertube>=2.1.0
-pytube>=15.0
+yt-dlp>=2024.8.6
 flask-cors==4.0.0
 requests>=2.31.0
