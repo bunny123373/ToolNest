@@ -11,10 +11,10 @@ const jsonLd = {
   "@type": "WebSite",
   "name": "ToolNest",
   "description": "Free online tools for everyday work - image tools, PDF tools, text tools, and more.",
-"url": "https://toolnest.com",
+"url": "https://toolsbar.vercel.app",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "https://toolnest.com/tools?q={search_term_string}",
+      "target": "https://toolsbar.vercel.app/tools?q={search_term_string}",
     "query-input": "required name=search_term_string"
   },
   "creator": {
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     title: "ToolNest - 50+ Free Smart Tools in One Place",
     description: "Fast, simple, and powerful online tools built for everyday work.",
     type: "website",
-    url: "https://toolnest.com",
+    url: "https://toolsbar.vercel.app",
   },
 };
 
