@@ -2,22 +2,12 @@
 
 import { useState, FormEvent } from 'react';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-
 interface VideoInfo {
   title: string;
   thumbnail: string;
   duration: string;
   views: string;
   author: string;
-}
-
-interface Format {
-  itag: number;
-  quality: string;
-  type: string;
-  fileSize: string;
-  category: 'video' | 'audio' | 'mp3';
 }
 
 function parseYouTubeUrl(url: string): string | null {
@@ -49,14 +39,11 @@ export default function ToolPageClient() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
-  const [formats, setFormats] = useState<Format[]>([]);
-  const [downloading, setDownloading] = useState<number | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setVideoInfo(null);
-    setFormats([]);
 
     const videoId = parseYouTubeUrl(url);
     if (!videoId) {
@@ -67,94 +54,39 @@ export default function ToolPageClient() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/info?id=${videoId}`);
-      const data = await response.json();
-
-      if (data.error) {
-        setError(data.error);
-        return;
-      }
-
-      setVideoInfo({
-        title: data.title || 'YouTube Video',
-        thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-        duration: data.duration ? formatDuration(data.duration) : 'Unknown',
-        views: data.views ? data.views.toLocaleString() : 'Unknown',
-        author: data.author || 'Unknown',
-      });
-
-      const fmtResponse = await fetch(`${BACKEND_URL}/api/formats?id=${videoId}`);
-      const fmtData = await fmtResponse.json();
-
-      const videoFormats: Format[] = (fmtData.video || []).map((f: any) => ({
-        ...f,
-        category: 'video' as const,
-      }));
-
-      const audioFormats: Format[] = (fmtData.audio || []).map((f: any) => ({
-        ...f,
-        category: 'audio' as const,
-      }));
-
-      const defaultFormats: Format[] = [
-        { itag: 22, quality: '1080p', type: 'MP4', fileSize: '~150 MB', category: 'video' },
-        { itag: 18, quality: '720p', type: 'MP4', fileSize: '~50 MB', category: 'video' },
-        { itag: 140, quality: '128K', type: 'M4A', fileSize: '~8 MB', category: 'audio' },
-      ];
-
-      if (videoFormats.length > 0 || audioFormats.length > 0) {
-        setFormats([...videoFormats, ...audioFormats]);
+      const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+      
+      if (response.status === 200) {
+        const data = await response.json();
+        setVideoInfo({
+          title: data.title || 'YouTube Video',
+          thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+          duration: 'N/A',
+          views: 'N/A',
+          author: data.author_name || 'Unknown',
+        });
       } else {
-        setFormats(defaultFormats);
+        setError('Could not fetch video information');
       }
     } catch {
-      setError('Failed to fetch video. Please check if backend is running.');
+      setError('Failed to fetch video. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDownload = async (format: Format) => {
-    setDownloading(format.itag);
-    
+  const openInY2mate = () => {
     const videoId = parseYouTubeUrl(url);
     if (!videoId) return;
+    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    window.open(`https://www.y2mate.com/youtube-mp4?url=${encodeURIComponent(youtubeUrl)}`, '_blank');
+  };
 
-    try {
-      const endpoint = format.category === 'audio' 
-        ? `${BACKEND_URL}/api/download/audio`
-        : `${BACKEND_URL}/api/download`;
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          videoId,
-          itag: format.itag,
-          format: format.category === 'audio' ? 'm4a' : 'mp4',
-        }),
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const filename = `${videoInfo?.title || 'video'}.${format.category === 'audio' ? 'm4a' : 'mp4'}`;
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Download failed');
-      }
-    } catch {
-      setError('Download failed. Please check if backend is running.');
-    } finally {
-      setTimeout(() => setDownloading(null), 2000);
-    }
+  const openInY2mateMP3 = () => {
+    const videoId = parseYouTubeUrl(url);
+    if (!videoId) return;
+    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    window.open(`https://www.y2mate.com/youtube-mp3?url=${encodeURIComponent(youtubeUrl)}`, '_blank');
   };
 
   return (
@@ -165,7 +97,7 @@ export default function ToolPageClient() {
             <span className="text-3xl">🎵</span>
           </div>
           <h1 className="text-3xl font-bold text-text-primary mb-2">YouTube Video Downloader</h1>
-          <p className="text-text-secondary">Download YouTube videos and audio in multiple formats</p>
+          <p className="text-text-secondary">Download YouTube videos and audio for free</p>
         </div>
 
         <form onSubmit={handleSubmit} className="mb-8">
@@ -196,96 +128,68 @@ export default function ToolPageClient() {
                   src={videoInfo.thumbnail}
                   alt={videoInfo.title}
                   className="w-full rounded-xl"
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    img.src = `https://img.youtube.com/vi/${parseYouTubeUrl(url)}/hqdefault.jpg`;
+                  }}
                 />
               </div>
               <div className="flex-1">
                 <h2 className="text-xl font-bold text-text-primary mb-2">{videoInfo.title}</h2>
                 <p className="text-text-secondary mb-2">by {videoInfo.author}</p>
-                <div className="flex gap-4 text-sm text-text-secondary mb-4">
-                  <span>Duration: {videoInfo.duration}</span>
-                  <span>Views: {videoInfo.views}</span>
-                </div>
+                <p className="text-text-secondary text-sm">Duration: {videoInfo.duration}</p>
               </div>
             </div>
           </div>
         )}
 
-        {formats.length > 0 && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-text-primary mb-4">Video</h3>
-              <div className="grid gap-3">
-                {formats.filter(f => f.category === 'video').map((format, index) => (
-                  <div
-                    key={index}
-                    className="bg-surface-elevated border border-border rounded-xl p-4 flex items-center justify-between"
-                  >
-                    <div>
-                      <p className="font-medium text-text-primary">{format.type}</p>
-                      <p className="text-sm text-text-secondary">{format.quality} • {format.fileSize}</p>
-                    </div>
-                    <button
-                      onClick={() => handleDownload(format)}
-                      disabled={downloading === format.itag}
-                      className="px-4 py-2 bg-success hover:bg-success/80 text-white font-medium rounded-lg transition-all flex items-center gap-2 disabled:opacity-50"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      {downloading === format.itag ? 'Downloading...' : 'Download'}
-                    </button>
-                  </div>
-                ))}
+        {videoInfo && (
+          <div className="text-center">
+            <div className="p-6 bg-primary/10 border border-primary/30 rounded-2xl mb-6">
+              <p className="text-primary font-medium mb-4">
+                Due to YouTube's bot protection, direct download is not available.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={openInY2mate}
+                  className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-medium rounded-xl transition-all hover:shadow-glow flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download Video (MP4)
+                </button>
+                <button
+                  onClick={openInY2mateMP3}
+                  className="px-6 py-3 bg-success hover:bg-success/80 text-white font-medium rounded-xl transition-all flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download Audio (MP3)
+                </button>
               </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-text-primary mb-4">Audio</h3>
-              <div className="grid gap-3">
-                {formats.filter(f => f.category === 'audio').map((format, index) => (
-                  <div
-                    key={index}
-                    className="bg-surface-elevated border border-border rounded-xl p-4 flex items-center justify-between"
-                  >
-                    <div>
-                      <p className="font-medium text-text-primary">{format.type}</p>
-                      <p className="text-sm text-text-secondary">{format.quality} • {format.fileSize}</p>
-                    </div>
-                    <button
-                      onClick={() => handleDownload(format)}
-                      disabled={downloading === format.itag}
-                      className="px-4 py-2 bg-success hover:bg-success/80 text-white font-medium rounded-lg transition-all flex items-center gap-2 disabled:opacity-50"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      {downloading === format.itag ? 'Downloading...' : 'Download'}
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <p className="text-text-secondary text-sm mt-3">
+                Opens Y2Mate website where you can download for free
+              </p>
             </div>
           </div>
         )}
 
         <div className="mt-10 p-6 bg-surface-elevated border border-border rounded-2xl">
-          <h2 className="text-lg font-semibold text-text-primary mb-4">How to use</h2>
+          <h2 className="text-lg font-semibold text-text-primary mb-4">How to download</h2>
           <ol className="space-y-3 text-text-secondary">
             <li className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 bg-primary/20 text-primary rounded-full flex items-center justify-center text-sm font-medium">1</span>
-              <span>Install Python backend: <code className="bg-surface-hover px-2 py-0.5 rounded">cd server && pip install -r requirements.txt</code></span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="flex-shrink-0 w-6 h-6 bg-primary/20 text-primary rounded-full flex items-center justify-center text-sm font-medium">2</span>
-              <span>Run backend: <code className="bg-surface-hover px-2 py-0.5 rounded">python app.py</code></span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="flex-shrink-0 w-6 h-6 bg-primary/20 text-primary rounded-full flex items-center justify-center text-sm font-medium">3</span>
               <span>Paste YouTube URL and click Get Video</span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="flex-shrink-0 w-6 h-6 bg-primary/20 text-primary rounded-full flex items-center justify-center text-sm font-medium">4</span>
-              <span>Select format and click Download</span>
+              <span className="flex-shrink-0 w-6 h-6 bg-primary/20 text-primary rounded-full flex items-center justify-center text-sm font-medium">2</span>
+              <span>Click "Download Video" or "Download Audio" button</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-primary/20 text-primary rounded-full flex items-center justify-center text-sm font-medium">3</span>
+              <span>On Y2Mate, select quality and click Download</span>
             </li>
           </ol>
         </div>
