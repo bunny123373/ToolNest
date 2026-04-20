@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://toolsbar.vercel.app/sitemap.xml
+Sitemap: https://toolnest.com/sitemap.xml
 
 User-agent: GPTBot
 Disallow: /
