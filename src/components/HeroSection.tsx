@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { searchTools } from '@/data/tools';
 import { Tool } from '@/types/tool';
+import Icon from './Icon';
 
 const featuredTools = [
   { id: 'youtube-thumbnail', icon: '🎬', name: 'Thumbnail', color: 'from-red-500/20 to-red-600/10' },
@@ -26,6 +27,7 @@ export default function HeroSection() {
       setSearchResults(results);
       setShowResults(true);
     } else {
+      setSearchResults([]);
       setShowResults(false);
     }
   };
@@ -77,22 +79,30 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {showResults && searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-3 bg-surface-elevated border border-border rounded-xl shadow-xl overflow-hidden z-50 max-h-80 overflow-y-auto">
-              {searchResults.map((tool) => (
-                <Link
-                  key={tool.id}
-                  href={tool.route}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-hover transition-colors border-b border-border/50 last:border-0"
-                >
-                  <span className="text-xl">{tool.icon}</span>
-                  <div className="text-left">
-                    <p className="text-text-primary font-medium">{tool.title}</p>
-                    <p className="text-text-secondary text-sm">{tool.description}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
+          {showResults && (
+            searchResults.length > 0 ? (
+              <div className="absolute top-full left-0 right-0 mt-3 bg-surface-elevated border border-border rounded-xl shadow-xl overflow-hidden z-50 max-h-80 overflow-y-auto">
+                {searchResults.map((tool) => (
+                  <Link
+                    key={tool.id}
+                    href={tool.route}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-surface-hover transition-colors border-b border-border/50 last:border-0"
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center bg-primary/10 rounded-lg">
+                      <Icon name={tool.icon} className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-text-primary font-medium">{tool.title}</p>
+                      <p className="text-text-secondary text-sm">{tool.description}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="absolute top-full left-0 right-0 mt-3 bg-surface-elevated border border-border rounded-xl shadow-xl p-4 text-center text-text-secondary">
+                No tools found matching "{searchQuery}"
+              </div>
+            )
           )}
         </div>
 
