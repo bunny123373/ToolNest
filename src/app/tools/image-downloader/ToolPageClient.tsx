@@ -9,6 +9,7 @@ interface ImageInfo {
   height: number;
   size: number;
   type: string;
+  blobUrl?: string;
 }
 
 export default function ToolPageClient() {
@@ -169,6 +170,7 @@ export default function ToolPageClient() {
       if (!response.ok) return null;
       const blob = await response.blob();
       const contentType = blob.type || getMediaTypeFromUrl(url, 'image/png');
+      const blobUrl = URL.createObjectURL(blob);
       return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
@@ -179,10 +181,11 @@ export default function ToolPageClient() {
             height: img.naturalHeight,
             size: blob.size,
             type: contentType,
+            blobUrl,
           });
         };
         img.onerror = () => resolve(null);
-        img.src = URL.createObjectURL(blob);
+        img.src = blobUrl;
       });
     } catch {
       return null;
@@ -241,19 +244,54 @@ export default function ToolPageClient() {
     }
   };
 
-  const downloadImage = () => {
+  const downloadImage = async () => {
     if (!imageInfo) return;
     
-    const link = document.createElement('a');
-    link.href = imageInfo.url;
-    link.download = imageInfo.filename;
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
+    setLoading(true);
     
-    setTimeout(() => {
-      document.body.removeChild(link);
-    }, 100);
+    try {
+      let downloadUrl: string;
+      let filename = imageInfo.filename;
+      
+      if (imageInfo.blobUrl && imageInfo.size > 0) {
+        downloadUrl = imageInfo.blobUrl;
+      } else {
+        const response = await fetch(imageInfo.url, { mode: 'cors' });
+        if (!response.ok) {
+          downloadUrl = imageInfo.url;
+        } else {
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          downloadUrl = blobUrl;
+          filename = imageInfo.filename;
+        }
+      }
+      
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 100);
+    } catch (err) {
+      const link = document.createElement('a');
+      link.href = imageInfo.url;
+      link.download = imageInfo.filename;
+      link.rel = 'noopener noreferrer';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 100);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const clearAll = () => {
@@ -308,7 +346,7 @@ export default function ToolPageClient() {
             <div className="flex flex-col lg:flex-row gap-6">
               <div className="flex-1">
                 <img
-                  src={imageInfo.url}
+                  src={imageInfo.blobUrl || imageInfo.url}
                   alt="Preview"
                   className="w-full rounded-xl object-contain max-h-96 bg-surface"
                 />
@@ -339,7 +377,8 @@ export default function ToolPageClient() {
                 </div>
                 <button
                   onClick={downloadImage}
-                  className="w-full px-6 py-3 bg-success hover:bg-success/80 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+                  disabled={loading}
+                  className="w-full px-6 py-3 bg-success hover:bg-success/80 disabled:bg-surface-hover text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
